@@ -38,7 +38,7 @@
 #ifndef CONFIGURATION_H
 #define CONFIGURATION_H
 #define CONFIGURATION_H_VERSION 010109
-#define MSG_MY_VERSION "V1.4.0"
+#define MSG_MY_VERSION "V1.4.0_TMC2208"
 #define STRING_CONFIG_H_AUTHOR "(DKoch, Germany)" // Who made the changes.
 
 
@@ -54,11 +54,10 @@
 
 #define CHIRON_POWER_LOSS_RECOVERY
 #if defined(CHIRON_POWER_LOSS_RECOVERY)
-  #define POWER_LOSS_PIN   		79     // Pin to detect power loss
+  #define POWER_LOSS_PIN   		79 		// Pin to detect power loss
   #define POWER_LOSS_CON_PIN	58
-  //#define OUTAGETEST_PIN       79
-  //#define OUTAGECON_PIN        58
-  #define POWER_LOSS_STATE LOW   // State of pin indicating power loss
+  #define POWER_LOSS_STATE LOW   		// State of pin indicating power loss
+  //#define DEBUG_POWER_LOSS_RECOVERY
 #endif
 
 
@@ -559,12 +558,12 @@
  *          TMC5130, TMC5130_STANDALONE
  * :['A4988', 'DRV8825', 'LV8729', 'L6470', 'TB6560', 'TB6600', 'TMC2100', 'TMC2130', 'TMC2130_STANDALONE', 'TMC2208', 'TMC2208_STANDALONE', 'TMC26X', 'TMC26X_STANDALONE', 'TMC2660', 'TMC2660_STANDALONE', 'TMC5130', 'TMC5130_STANDALONE']
  */
-#define X_DRIVER_TYPE  A4988
-#define Y_DRIVER_TYPE  A4988
-#define Z_DRIVER_TYPE  A4988
-#define Z2_DRIVER_TYPE A4988
-#define E0_DRIVER_TYPE A4988
-//#define E1_DRIVER_TYPE A4988
+#define X_DRIVER_TYPE  TMC2208_STANDALONE
+#define Y_DRIVER_TYPE  TMC2208_STANDALONE
+#define Z_DRIVER_TYPE  TMC2208_STANDALONE
+#define Z2_DRIVER_TYPE TMC2208_STANDALONE
+#define E0_DRIVER_TYPE TMC2208_STANDALONE
+#define E1_DRIVER_TYPE TMC2208_STANDALONE
 
 
 // Enable this feature if all enabled endstop pins are interrupt-capable.
@@ -613,8 +612,8 @@
  * Override with M92
  *                                      X, Y, Z, E0 [, E1[, E2[, E3[, E4]]]]
  */
-#define DEFAULT_AXIS_STEPS_PER_UNIT   { 80, 100, 400, 405 }		// Anycubic Chiron Default
-
+//#define DEFAULT_AXIS_STEPS_PER_UNIT   { 80, 100, 400, 405 }		// Anycubic Chiron Default
+#define DEFAULT_AXIS_STEPS_PER_UNIT   { 80.40, 100.09, 397.03, 418.60 }
 
 /**
  * Default Max Feed Rate (mm/s)
@@ -629,7 +628,8 @@
  * Override with M201
  *                                      X, Y, Z, E0 [, E1[, E2[, E3[, E4]]]]
  */
-#define DEFAULT_MAX_ACCELERATION      { 350, 350, 50, 30000 } // Anycubic Chiron Default
+//#define DEFAULT_MAX_ACCELERATION      { 350, 350, 50, 30000 } // Chiron Default
+#define DEFAULT_MAX_ACCELERATION      { 6000, 6000, 50, 30000 }
 
 /**
  * Default Acceleration (change/s) change = mm/s
@@ -640,10 +640,17 @@
  *   M204 T    Travel Acceleration
  */
  // Chiron Default
-
+/*
 #define DEFAULT_ACCELERATION          350    // X, Y, Z and E acceleration for printing moves
 #define DEFAULT_RETRACT_ACCELERATION  3000    // E acceleration for retracts
 #define DEFAULT_TRAVEL_ACCELERATION   350    // X, Y, Z acceleration for travel (non printing) moves
+*/
+
+// User
+#define DEFAULT_ACCELERATION          550    // X, Y, Z and E acceleration for printing moves
+#define DEFAULT_RETRACT_ACCELERATION  3000    // E acceleration for retracts
+#define DEFAULT_TRAVEL_ACCELERATION   550    // X, Y, Z acceleration for travel (non printing) moves
+
 
 
 /**
@@ -655,17 +662,18 @@
  * value set here, it may happen instantaneously.
  */
 // Chiron Default
+/*
 #define DEFAULT_XJERK                 4.0
 #define DEFAULT_YJERK                 4.0
 #define DEFAULT_ZJERK                 0.4
 #define DEFAULT_EJERK                 20
+*/
 
-/*
 #define DEFAULT_XJERK                 8.0
 #define DEFAULT_YJERK                 8.0
 #define DEFAULT_ZJERK                 0.4
-#define DEFAULT_EJERK                 12
-*/
+#define DEFAULT_EJERK                 20
+
 
 /**
  * S-Curve Acceleration
@@ -866,14 +874,14 @@
 // @section machine
 
 // Invert the stepper direction. Change (or reverse the motor connector) if an axis goes the wrong way.
-#define INVERT_X_DIR true
-#define INVERT_Y_DIR true
-#define INVERT_Z_DIR true
+#define INVERT_X_DIR false
+#define INVERT_Y_DIR false
+#define INVERT_Z_DIR false
 
 // @section extruder
 
 // For direct drive extruder v9 set to true, for geared extruder set to false.
-#define INVERT_E0_DIR false
+#define INVERT_E0_DIR true
 #define INVERT_E1_DIR true
 #define INVERT_E2_DIR false
 #define INVERT_E3_DIR false
@@ -881,7 +889,7 @@
 
 // @section homing
 
-#define NO_MOTION_BEFORE_HOMING  // Inhibit movement until all axes have been homed
+//#define NO_MOTION_BEFORE_HOMING  // Inhibit movement until all axes have been homed
 
 //#define UNKNOWN_Z_NO_RAISE // Don't raise Z (lower the bed) if Z is "unknown." For beds that fall when Z is powered off.
 

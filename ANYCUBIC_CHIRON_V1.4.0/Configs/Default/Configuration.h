@@ -54,11 +54,10 @@
 
 #define CHIRON_POWER_LOSS_RECOVERY
 #if defined(CHIRON_POWER_LOSS_RECOVERY)
-  #define POWER_LOSS_PIN   		79     // Pin to detect power loss
+  #define POWER_LOSS_PIN   		79		// Pin to detect power loss
   #define POWER_LOSS_CON_PIN	58
-  //#define OUTAGETEST_PIN       79
-  //#define OUTAGECON_PIN        58
-  #define POWER_LOSS_STATE LOW   // State of pin indicating power loss
+  #define POWER_LOSS_STATE LOW   		// State of pin indicating power loss
+  //#define DEBUG_POWER_LOSS_RECOVERY
 #endif
 
 
@@ -564,7 +563,7 @@
 #define Z_DRIVER_TYPE  A4988
 #define Z2_DRIVER_TYPE A4988
 #define E0_DRIVER_TYPE A4988
-//#define E1_DRIVER_TYPE A4988
+#define E1_DRIVER_TYPE A4988
 
 
 // Enable this feature if all enabled endstop pins are interrupt-capable.
@@ -664,7 +663,7 @@
 #define DEFAULT_XJERK                 8.0
 #define DEFAULT_YJERK                 8.0
 #define DEFAULT_ZJERK                 0.4
-#define DEFAULT_EJERK                 12
+#define DEFAULT_EJERK                 20
 */
 
 /**
@@ -881,7 +880,7 @@
 
 // @section homing
 
-#define NO_MOTION_BEFORE_HOMING  // Inhibit movement until all axes have been homed
+//#define NO_MOTION_BEFORE_HOMING  // Inhibit movement until all axes have been homed
 
 //#define UNKNOWN_Z_NO_RAISE // Don't raise Z (lower the bed) if Z is "unknown." For beds that fall when Z is powered off.
 
@@ -1415,7 +1414,7 @@
  *
  * :{ 'en':'English', 'an':'Aragonese', 'bg':'Bulgarian', 'ca':'Catalan', 'cn':'Chinese', 'cz':'Czech', 'cz_utf8':'Czech (UTF8)', 'de':'German', 'el':'Greek', 'el-gr':'Greek (Greece)', 'es':'Spanish', 'es_utf8':'Spanish (UTF8)', 'eu':'Basque-Euskera', 'fi':'Finnish', 'fr':'French', 'fr_utf8':'French (UTF8)', 'gl':'Galician', 'hr':'Croatian', 'it':'Italian', 'kana':'Japanese', 'kana_utf8':'Japanese (UTF8)', 'nl':'Dutch', 'pl':'Polish', 'pt':'Portuguese', 'pt-br':'Portuguese (Brazilian)', 'pt-br_utf8':'Portuguese (Brazilian UTF8)', 'pt_utf8':'Portuguese (UTF8)', 'ru':'Russian', 'sk_utf8':'Slovak (UTF8)', 'tr':'Turkish', 'uk':'Ukrainian', 'zh_CN':'Chinese (Simplified)', 'zh_TW':'Chinese (Taiwan)', 'test':'TEST' }
  */
-#define LCD_LANGUAGE de
+#define LCD_LANGUAGE en
 
 /**
  * LCD Character Set
