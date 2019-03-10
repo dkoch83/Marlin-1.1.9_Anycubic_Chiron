@@ -1,8 +1,12 @@
 # Marlin-1.1.9 vor Anycubic Chiron
 
 
+Config in Source dir is TMC2208
 
-
+Othe configs see Config dir.
+- Default
+- TMC2208
+- TMC2208_with_direction_change_by_cabel
 
 
 
