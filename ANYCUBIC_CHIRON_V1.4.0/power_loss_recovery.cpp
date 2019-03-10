@@ -158,16 +158,21 @@ void check_print_job_recovery() {
           }
         #endif
 
-        dtostrf(job_recovery_info.current_position[Z_AXIS] + 2, 1, 3, str_1);
+        //dtostrf(job_recovery_info.current_position[Z_AXIS] + 2, 1, 3, str_1);
+		dtostrf(job_recovery_info.current_position[Z_AXIS], 1, 3, str_1);
         dtostrf(job_recovery_info.current_position[E_CART]
           #if ENABLED(SAVE_EACH_CMD_MODE)
-            - 5
+            - 1
+			//- 5
           #endif
           , 1, 3, str_2
         );
-        sprintf_P(job_recovery_commands[ind++], PSTR("G92.0 Z%s E%s"), str_1, str_2); // Current Z + 2 and E
-
-        uint8_t r = job_recovery_info.cmd_queue_index_r, c = job_recovery_info.commands_in_queue;
+        //sprintf_P(job_recovery_commands[ind++], PSTR("G92.0 Z%s E%s"), str_1, str_2); // Current Z + 2 and E
+		sprintf_P(job_recovery_commands[ind++], PSTR("G92.0 E%s"), str_2); // Current E
+        
+		sprintf_P(job_recovery_commands[ind++], PSTR("G1 Z%s"), str_1);
+		
+		uint8_t r = job_recovery_info.cmd_queue_index_r, c = job_recovery_info.commands_in_queue;
         while (c--) {
           strcpy(job_recovery_commands[ind++], job_recovery_info.command_queue[r]);
           r = (r + 1) % BUFSIZE;

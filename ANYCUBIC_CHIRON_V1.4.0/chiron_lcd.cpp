@@ -272,7 +272,7 @@ void lcd_init() {
 	PowerOnMusic();
 	setup_ChironPowerLossPin();
 	SetUpFAN2_PIN();
-	//setupSDCARD(); 
+	setupSDCARD(); 
 	SetupFilament();
 	
 	#if HAS_BED_PROBE
@@ -377,7 +377,7 @@ void lcd_setalertstatusPGM(const char* message) {
 }
 
 void SDCARD_UPDATA() {
-	bool sd_status = IS_SD_INSERTED;
+	uint8_t sd_status = IS_SD_INSERTED();
 	if (sd_status != lcd_sd_status) {
 		if (sd_status) {
 			card.initsd();
@@ -553,7 +553,7 @@ void get_command_from_TFT(const char* command) {
         break;                      
         
         case 8: // A8 GET SD LIST
-			if(!IS_SD_INSERTED) {
+			if(!IS_SD_INSERTED()) {
 				MyFileNrCnt=0;
 				write_to_lcd_P(PSTR("J02\r\n"));
 			} else { 
@@ -675,13 +675,7 @@ void get_command_from_TFT(const char* command) {
 		{
 			#if defined(CHIRON_POWER_LOSS_RECOVERY)
 			if( (!planner.movesplanned()) && (!last_printing_status) ) {
-				enqueue_and_echo_commands_P(PSTR("M420 S0\nG28 R0"
-						#if ENABLED(MARLIN_DEV_MODE)
-						  " S"
-						#elif !IS_KINEMATIC
-						  " X Y"
-						#endif
-				));			  
+				enqueue_and_echo_commands_P(PSTR("G28 R2"));			  
 			  
 				#if HAS_HEATED_BED
 				const int16_t bt = job_recovery_info.target_temperature_bed;
@@ -696,18 +690,10 @@ void get_command_from_TFT(const char* command) {
 				HOTEND_LOOP() {
 					const int16_t et = job_recovery_info.target_temperature[e];
 					if (et) {
-					  #if HOTENDS > 1
-						sprintf_P(cmd, PSTR("T%i"), e);
-						enqueue_and_echo_command(cmd);
-					  #endif
 					  sprintf_P(cmd, PSTR("M109 S%i"), et);
 					  enqueue_and_echo_command(cmd);
 					}
 				}
-				#if HOTENDS > 1
-					sprintf_P(cmd, PSTR("T%i"), job_recovery_info.active_hotend);
-					enqueue_and_echo_command(cmd);
-				#endif
 
 				// Restore print cooling fan speeds
 				for (uint8_t i = 0; i < FAN_COUNT; i++) {
@@ -876,7 +862,7 @@ void get_command_from_TFT(const char* command) {
 		case 26: // A26 refresh
 			card.initsd();
 			MyFileNrCnt = 0;
-			if(!IS_SD_INSERTED){
+			if(!IS_SD_INSERTED()){
 				write_to_lcd_P(PSTR("J02\r\n"));
 			}
 		break;
@@ -1140,14 +1126,15 @@ void Fan2Scan() {
   else WRITE(V5_COOLING_PIN, LOW);
 }
 
-/*
 void setupSDCARD() {
-  SET_INPUT(SD_DETECT_PIN);
-  WRITE(SD_DETECT_PIN, HIGH);
-  _delay_ms(300);
-  card.initsd();
+	#if ENABLED(SDSUPPORT) && PIN_EXISTS(SD_DETECT)
+		SET_INPUT(SD_DETECT_PIN);
+		WRITE(SD_DETECT_PIN, HIGH);
+		lcd_sd_status = 2;
+		//_delay_ms(300);
+		//card.initsd();
+	#endif
 }
-*/
 
 
 // Convert unsigned int to string with 12 format
