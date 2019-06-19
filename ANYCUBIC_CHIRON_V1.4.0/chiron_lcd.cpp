@@ -570,13 +570,15 @@ void get_command_from_TFT(const char* command) {
 					while ( (fileoutputcnt < (filenumber + 4)) && (filecnt <  (MyFileNrCnt)) ) {
 						
 						card.getfilename((filecnt),NULL);
-						if( (strstr(card.filename,".gco") !=NULL ) || (strstr(card.filename,".GCO") !=NULL) ) {
+						//if( (strstr(card.filename,".gco") !=NULL ) || (strstr(card.filename,".GCO") !=NULL) ) {
+						if( (strstr(card.filename,".g") !=NULL ) || (strstr(card.filename,".G") !=NULL) ) {
 							fileoutputcnt++;
 							if (fileoutputcnt > filenumber) {
 								//write_to_lcd(prepend);
 								write_to_lcd(card.filename);
 								write_to_lcd_P(PSTR("\r\n"));
-								write_to_lcd(card.longFilename);
+								if (card.longFilename[0] == '\0' ) write_to_lcd(card.filename);
+								else write_to_lcd(card.longFilename);
 								write_to_lcd_P(PSTR("\r\n"));			
 							}
 						}
@@ -587,7 +589,7 @@ void get_command_from_TFT(const char* command) {
 			}
         break;
         
-        case 9: // A9 pasue sd
+        case 9: // A9 pause sd
 			if(card.sdprinting) {
 				write_to_lcd_P(PSTR("J05\r\n")); // J05 Pausing
 				card.pauseSDPrint();
@@ -1131,8 +1133,8 @@ void setupSDCARD() {
 		SET_INPUT(SD_DETECT_PIN);
 		WRITE(SD_DETECT_PIN, HIGH);
 		lcd_sd_status = 2;
-		//_delay_ms(300);
-		//card.initsd();
+		_delay_ms(300);
+		card.initsd();
 	#endif
 }
 

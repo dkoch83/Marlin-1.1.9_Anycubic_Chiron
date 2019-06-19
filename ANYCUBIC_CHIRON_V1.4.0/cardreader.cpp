@@ -135,8 +135,9 @@ void CardReader::lsDive(const char *prepend, SdFile parent, const char * const m
       
       filenameIsDir = DIR_IS_SUBDIR(&p);
 
-      if (!filenameIsDir && (p.name[8] != 'G' || p.name[9] == '~')) continue;
-
+      //if (!filenameIsDir && (p.name[8] != 'G' || p.name[9] == '~')) continue;
+	  if (!filenameIsDir && (p.name[9] == '~')) continue;
+	  
       switch (lsAction) {  // 1 based file count
         case LS_Count:
           nrFiles++;
