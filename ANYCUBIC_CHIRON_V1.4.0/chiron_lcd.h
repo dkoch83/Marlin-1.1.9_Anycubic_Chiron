@@ -25,6 +25,22 @@
 
 #include "MarlinConfig.h"
 
+
+enum {
+	F_USBConnect	 	=(1<<0),
+	F_USBOnline		 	=(1<<1),
+	F_FilamentRunOut 	=(1<<2),
+	F_PrintPause		=(1<<3),
+	F_LastPrintStatus	=(1<<4)	
+};
+
+extern void init_flag();
+extern bool get_flag(uint8_t Flag);
+extern void set_flag(uint8_t Flag);
+extern void clr_flag(uint8_t Flag);
+
+
+
 #if ENABLED(CHIRON_LCD)
   void lcd_init();
   bool lcd_detected();
@@ -58,15 +74,9 @@ inline void lcd_buttons_update() {}
 	void write_to_lcd_i(int value);
 
 	// eeprom_index
-	extern float NEW_zprobe_zoffset; // Anycubic Chiron add
 	extern int z_values_index;
 	extern int z_values_size;
 
-	// USB Connection
-	extern bool USBConnectFlag;
-	extern bool UsbOnLineFlag;	
-	
-	//
 	extern const unsigned int Max_ModelCooling;
 	
 #endif

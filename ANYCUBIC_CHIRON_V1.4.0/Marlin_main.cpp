@@ -8293,7 +8293,7 @@ inline void gcode_M104() {
 inline void gcode_M105() {
   if (get_target_extruder_from_command(105)) return;
 
-  if(!card.sdprinting) UsbOnLineFlag = true; // if reveive m105 from pc,meant usb on line
+  if(!card.sdprinting) set_flag(F_USBOnline); //UsbOnLineFlag = true; // if reveive m105 from pc,meant usb on line
 
   #if HAS_TEMP_SENSOR
     SERIAL_PROTOCOLPGM(MSG_OK);
@@ -8575,7 +8575,7 @@ inline void gcode_M109() {
 	if(card.sdprinting) {
 		write_to_lcd_P(PSTR("J04\r\n")); 	//printing from sd card
 	}
-	else if(USBConnectFlag) {
+	else if(get_flag(F_USBConnect)) {
 		write_to_lcd_P(PSTR("J03\r\n")); 	//usb connectting
 	}		
   #endif     
@@ -13178,49 +13178,6 @@ void process_parsed_command() {
 
       case 999: gcode_M999(); break;                              // M999: Restart after being Stopped
 
-	  // ##############################
-	  //       Anycubic Chiron
-	  // ##############################
-	  /*
-      #ifdef AUTO_BED_LEVELING_BILINEAR
-      case 1000:                                                  // Set Manual Leveling active & RESET AUTOBED DATE
-        float temp;
-        if(parser.seen('S')) temp=parser.value_float();
-        else temp=-3.5;
-        for (uint8_t x = 0; x < GRID_MAX_POINTS_X; x++) {
-         for (uint8_t y = 0; y < GRID_MAX_POINTS_Y; y++) z_values[x][y] = temp; 
-        };
-        bilinear_grid_spacing[0]=int((RIGHT_PROBE_BED_POSITION - LEFT_PROBE_BED_POSITION) / (GRID_MAX_POINTS_X-1));
-        bilinear_grid_spacing[1]=int((BACK_PROBE_BED_POSITION - FRONT_PROBE_BED_POSITION) / (GRID_MAX_POINTS_Y-1));
-        bilinear_start[0] = LEFT_PROBE_BED_POSITION;
-        bilinear_start[1] = FRONT_PROBE_BED_POSITION;
-        zprobe_zoffset     = Z_PROBE_OFFSET_FROM_EXTRUDER;
-        NEW_zprobe_zoffset = Z_PROBE_OFFSET_FROM_EXTRUDER;
-        Manual_Leveling = 0xaa;
-        SaveWay2Leveling();
-        (void)settings.save();
-        refresh_bed_level();
-        SERIAL_ECHOPGM("Done, Manual Leveling was actived!");
-      break;
-      
-      case 1001:                                                  // Set Auto Leveling active
-        for (uint8_t x = 0; x < GRID_MAX_POINTS_X; x++) {
-           for (uint8_t y = 0; y < GRID_MAX_POINTS_Y; y++) z_values[x][y] =-0.1; 
-        };
-        bilinear_grid_spacing[0]=int((RIGHT_PROBE_BED_POSITION-LEFT_PROBE_BED_POSITION)/(GRID_MAX_POINTS_X-1));
-        bilinear_grid_spacing[1]=int((BACK_PROBE_BED_POSITION-FRONT_PROBE_BED_POSITION)/(GRID_MAX_POINTS_Y-1));
-        bilinear_start[0]=LEFT_PROBE_BED_POSITION;
-        bilinear_start[1]=FRONT_PROBE_BED_POSITION;
-        zprobe_zoffset = Z_PROBE_OFFSET_FROM_EXTRUDER;
-        NEW_zprobe_zoffset=Z_PROBE_OFFSET_FROM_EXTRUDER;
-        Manual_Leveling=0x55;
-        SaveWay2Leveling();
-        (void)settings.save();
-        refresh_bed_level();
-        SERIAL_ECHOPGM("Done, Auto Leveling was actived!");              
-      break;
-     #endif  
-	*/
       default: parser.unknown_command_error();
     }
     break;
