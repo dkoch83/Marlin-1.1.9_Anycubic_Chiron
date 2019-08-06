@@ -365,11 +365,6 @@ void CardReader::openFile(char * const path, const bool read, const bool subcall
         return;
       }
 
-      #if ENABLED(CHIRON_LCD)
-      //NEW_SERIAL_ECHO(path);
-		write_to_lcd(path);
-      #endif
-
       // Store current filename (based on workDirParents) and position
       getAbsFilename(proc_filenames[file_subcall_ctr]);
       filespos[file_subcall_ctr] = sdpos;

@@ -8293,7 +8293,7 @@ inline void gcode_M104() {
 inline void gcode_M105() {
   if (get_target_extruder_from_command(105)) return;
 
-  if(!card.sdprinting) set_flag(F_USBOnline); //UsbOnLineFlag = true; // if reveive m105 from pc,meant usb on line
+  if(!card.sdprinting) UsbOnLineFlag = true; // if reveive m105 from pc,meant usb on line
 
   #if HAS_TEMP_SENSOR
     SERIAL_PROTOCOLPGM(MSG_OK);
@@ -8575,7 +8575,7 @@ inline void gcode_M109() {
 	if(card.sdprinting) {
 		write_to_lcd_P(PSTR("J04\r\n")); 	//printing from sd card
 	}
-	else if(get_flag(F_USBConnect)) {
+	else if(USBConnectFlag) {
 		write_to_lcd_P(PSTR("J03\r\n")); 	//usb connectting
 	}		
   #endif     

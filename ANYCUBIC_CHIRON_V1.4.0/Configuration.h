@@ -613,7 +613,7 @@
  *                                      X, Y, Z, E0 [, E1[, E2[, E3[, E4]]]]
  */
 //#define DEFAULT_AXIS_STEPS_PER_UNIT   { 80, 100, 400, 405 }		// Anycubic Chiron Default
-#define DEFAULT_AXIS_STEPS_PER_UNIT   { 79.80, 100.09, 400.07, 418.60 }
+#define DEFAULT_AXIS_STEPS_PER_UNIT   { 80.40, 100.09, 397.03, 418.60 }
 
 /**
  * Default Max Feed Rate (mm/s)
@@ -647,9 +647,9 @@
 */
 
 // User
-#define DEFAULT_ACCELERATION          450    // X, Y, Z and E acceleration for printing moves
+#define DEFAULT_ACCELERATION          550    // X, Y, Z and E acceleration for printing moves
 #define DEFAULT_RETRACT_ACCELERATION  3000    // E acceleration for retracts
-#define DEFAULT_TRAVEL_ACCELERATION   450    // X, Y, Z acceleration for travel (non printing) moves
+#define DEFAULT_TRAVEL_ACCELERATION   550    // X, Y, Z acceleration for travel (non printing) moves
 
 
 
@@ -662,17 +662,18 @@
  * value set here, it may happen instantaneously.
  */
 // Chiron Default
+/*
 #define DEFAULT_XJERK                 4.0
 #define DEFAULT_YJERK                 4.0
 #define DEFAULT_ZJERK                 0.4
 #define DEFAULT_EJERK                 20
-
-/*
-#define DEFAULT_XJERK                 5.0
-#define DEFAULT_YJERK                 5.0
-#define DEFAULT_ZJERK                 0.5
-#define DEFAULT_EJERK                 20
 */
+
+#define DEFAULT_XJERK                 8.0
+#define DEFAULT_YJERK                 8.0
+#define DEFAULT_ZJERK                 0.4
+#define DEFAULT_EJERK                 20
+
 
 /**
  * S-Curve Acceleration

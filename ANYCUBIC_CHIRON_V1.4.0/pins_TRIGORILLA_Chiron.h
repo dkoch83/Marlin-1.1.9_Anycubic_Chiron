@@ -43,6 +43,11 @@
 
 #include "pins_RAMPS_Chiron.h"
 
+#ifdef E0_AUTO_FAN_PIN
+#undef E0_AUTO_FAN_PIN
+#endif
+#define E0_AUTO_FAN_PIN ORIG_E0_AUTO_FAN_PIN
+
 #if ENABLED(CHIRON_LCD)
     #undef BEEPER_PIN
     #define BEEPER_PIN			33
