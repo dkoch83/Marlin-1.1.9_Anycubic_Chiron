@@ -38,7 +38,7 @@
 #ifndef CONFIGURATION_H
 #define CONFIGURATION_H
 #define CONFIGURATION_H_VERSION 010109
-#define MSG_MY_VERSION "V1.4.0_TMC2208"
+#define MSG_MY_VERSION "V1.4.1_TMC2208"
 #define STRING_CONFIG_H_AUTHOR "(DKoch, Germany)" // Who made the changes.
 
 
@@ -60,6 +60,7 @@
   //#define DEBUG_POWER_LOSS_RECOVERY
 #endif
 
+#define EXT_LEVEL_HIGH 0.1				// Height over the bed for extend leveling																		
 
 
 //===========================================================================
@@ -131,7 +132,7 @@
  *
  * :[2400, 9600, 19200, 38400, 57600, 115200, 250000, 500000, 1000000]
  */
-#define BAUDRATE 250000
+#define BAUDRATE 115200
 
 // Enable the Bluetooth serial interface on AT90USB devices
 //#define BLUETOOTH
@@ -319,6 +320,7 @@
  * :{ '0': "Not used", '1':"100k / 4.7k - EPCOS", '2':"200k / 4.7k - ATC Semitec 204GT-2", '3':"Mendel-parts / 4.7k", '4':"10k !! do not use for a hotend. Bad resolution at high temp. !!", '5':"100K / 4.7k - ATC Semitec 104GT-2 (Used in ParCan & J-Head)", '501':"100K Zonestar (Tronxy X3A)", '6':"100k / 4.7k EPCOS - Not as accurate as Table 1", '7':"100k / 4.7k Honeywell 135-104LAG-J01", '8':"100k / 4.7k 0603 SMD Vishay NTCS0603E3104FXT", '9':"100k / 4.7k GE Sensing AL03006-58.2K-97-G1", '10':"100k / 4.7k RS 198-961", '11':"100k / 4.7k beta 3950 1%", '12':"100k / 4.7k 0603 SMD Vishay NTCS0603E3104FXT (calibrated for Makibox hot bed)", '13':"100k Hisens 3950  1% up to 300°C for hotend 'Simple ONE ' & hotend 'All In ONE'", '20':"PT100 (Ultimainboard V2.x)", '51':"100k / 1k - EPCOS", '52':"200k / 1k - ATC Semitec 204GT-2", '55':"100k / 1k - ATC Semitec 104GT-2 (Used in ParCan & J-Head)", '60':"100k Maker's Tool Works Kapton Bed Thermistor beta=3950", '66':"Dyze Design 4.7M High Temperature thermistor", '70':"the 100K thermistor found in the bq Hephestos 2", '71':"100k / 4.7k Honeywell 135-104LAF-J01", '147':"Pt100 / 4.7k", '1047':"Pt1000 / 4.7k", '110':"Pt100 / 1k (non-standard)", '1010':"Pt1000 / 1k (non standard)", '-4':"Thermocouple + AD8495", '-3':"Thermocouple + MAX31855 (only for sensor 0)", '-2':"Thermocouple + MAX6675 (only for sensor 0)", '-1':"Thermocouple + AD595",'998':"Dummy 1", '999':"Dummy 2" }
  */
 #define TEMP_SENSOR_0 5
+//#define TEMP_SENSOR_0 13						  
 #define TEMP_SENSOR_1 0
 #define TEMP_SENSOR_2 0
 #define TEMP_SENSOR_3 0
@@ -364,6 +366,7 @@
 //#define HEATER_3_MAXTEMP 275
 //#define HEATER_4_MAXTEMP 275
 #define BED_MAXTEMP 106
+//#define BED_MAXTEMP 120					   
 
 //===========================================================================
 //============================= PID Settings ================================
@@ -392,6 +395,10 @@
   #define DEFAULT_Ki 0.5
   #define DEFAULT_Kd 106.55
 
+  // E3D V6 24V extruder
+  //#define DEFAULT_Kp 9.05
+  //#define DEFAULT_Ki 0.44
+  //#define DEFAULT_Kd 46.22
   // MakerGear
   //#define DEFAULT_Kp 7.0
   //#define DEFAULT_Ki 0.1
@@ -647,9 +654,9 @@
 */
 
 // User
-#define DEFAULT_ACCELERATION          550    // X, Y, Z and E acceleration for printing moves
+#define DEFAULT_ACCELERATION          500    // X, Y, Z and E acceleration for printing moves
 #define DEFAULT_RETRACT_ACCELERATION  3000    // E acceleration for retracts
-#define DEFAULT_TRAVEL_ACCELERATION   550    // X, Y, Z acceleration for travel (non printing) moves
+#define DEFAULT_TRAVEL_ACCELERATION   500    // X, Y, Z acceleration for travel (non printing) moves
 
 
 /**
@@ -668,8 +675,8 @@
 #define DEFAULT_EJERK                 20
 */
 
-#define DEFAULT_XJERK                 8.0
-#define DEFAULT_YJERK                 8.0
+#define DEFAULT_XJERK                 6.0
+#define DEFAULT_YJERK                 6.0
 #define DEFAULT_ZJERK                 0.4
 #define DEFAULT_EJERK                 20
 
@@ -682,7 +689,7 @@
  *
  * See https://github.com/synthetos/TinyG/wiki/Jerk-Controlled-Motion-Explained
  */
-#define S_CURVE_ACCELERATION
+//#define S_CURVE_ACCELERATION
 
 //===========================================================================
 //============================= Z Probe Options =============================
@@ -806,7 +813,7 @@
 #define Z_PROBE_OFFSET_FROM_EXTRUDER -14   // Z offset: -below +above  [the nozzle]
 
 // Certain types of probes need to stay away from edges
-#define MIN_PROBE_EDGE 8
+#define MIN_PROBE_EDGE 10
 
 // X and Y axis travel speed (mm/m) between probes
 #define XY_PROBE_SPEED 8000
@@ -1054,9 +1061,9 @@
   //#define FRONT_PROBE_BED_POSITION MIN_PROBE_EDGE
   //#define BACK_PROBE_BED_POSITION (Y_BED_SIZE - MIN_PROBE_EDGE)
   #define LEFT_PROBE_BED_POSITION MIN_PROBE_EDGE
-  #define RIGHT_PROBE_BED_POSITION LEFT_PROBE_BED_POSITION+378
-  #define FRONT_PROBE_BED_POSITION MIN_PROBE_EDGE+9
-  #define BACK_PROBE_BED_POSITION FRONT_PROBE_BED_POSITION+378
+  #define RIGHT_PROBE_BED_POSITION (LEFT_PROBE_BED_POSITION + 380)
+  #define FRONT_PROBE_BED_POSITION (MIN_PROBE_EDGE + 9)
+  #define BACK_PROBE_BED_POSITION  (FRONT_PROBE_BED_POSITION + 380)
   
   
   // Probe along the Y axis, advancing X after each column

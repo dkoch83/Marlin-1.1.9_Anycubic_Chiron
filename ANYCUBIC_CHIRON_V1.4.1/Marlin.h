@@ -52,6 +52,8 @@ void idle(
   #endif
 );
 
+void wait_emty_command_quene();
+
 extern millis_t previous_move_ms;
 inline void refresh_cmd_timeout() { previous_move_ms = millis(); }
 
@@ -239,7 +241,7 @@ inline bool IsStopped() { return !Running; }
 
 bool enqueue_and_echo_command(const char* cmd);           // Add a single command to the end of the buffer. Return false on failure.
 void enqueue_and_echo_commands_P(const char * const cmd); // Set one or more commands to be prioritized over the next Serial/SD command.
-void clear_command_queue();
+
 
 #if ENABLED(M100_FREE_MEMORY_WATCHER) || ENABLED(POWER_LOSS_RECOVERY) || ENABLED(CHIRON_POWER_LOSS_RECOVERY)
   extern char command_queue[BUFSIZE][MAX_CMD_SIZE];

@@ -38,6 +38,7 @@
 
 class FilamentRunoutSensor {
   public:
+    static bool filament_ran_out;
     FilamentRunoutSensor() {}
 
     static void setup();
@@ -52,7 +53,6 @@ class FilamentRunoutSensor {
       }
     }
   private:
-    static bool filament_ran_out;
     static uint8_t runout_count;
 
     FORCE_INLINE static bool check() {

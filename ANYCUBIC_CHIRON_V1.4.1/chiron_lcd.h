@@ -65,8 +65,13 @@ inline void lcd_buttons_update() {}
 	extern bool USBConnectFlag;
 	extern bool UsbOnLineFlag;	
 	
+	#if HAS_BED_PROBE
+	extern float SAVE_zprobe_zoffset;
+	#endif
+	
 	//
 	extern const unsigned int Max_ModelCooling;
+	extern float feedrate_mm_s;
 	
 #endif
 

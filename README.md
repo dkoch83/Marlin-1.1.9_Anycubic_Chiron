@@ -1,12 +1,65 @@
 # Marlin-1.1.9 vor Anycubic Chiron
 
 
+### Config
 Config in Source dir is TMC2208
 
 Othe configs see Config dir.
 - Default
 - TMC2208
 - TMC2208_with_direction_change_by_cabel
+
+---
+
+### G-Code
+
+##### M1000 - Reset the Bilinear Leveling Grid	
+		|   |   0  |   1  |   2  |   3  |    4 |
+		|---|------|------|------|------|------|
+		| 0 |-2.000|-2.000|-2.000|-2.000|-2.000|
+		| 1 |-2.000|-2.000|-2.000|-2.000|-2.000|
+		| 2 |-2.000|-2.000|-2.000|-2.000|-2.000|
+		| 3 |-2.000|-2.000|-2.000|-2.000|-2.000|
+		| 4 |-2.000|-2.000|-2.000|-2.000|-2.000|
+
+		Z offset -14
+        
+        
+        Creating a txt, input
+			M140 S0  ; Set Bed Temperature to 0 °C
+			M104 S0  ; Set Hotend Temperature to 0 °C
+			M501     ; Restore Settings
+			M1000	 ; Reset the Bilinear Leveling Grid
+			M500	 ; Save Settings
+		Save and rename it as "Reset_leveling.gcode"
+
+##### G5 - Power Loss Recovery
+		Not needed.
+		The Power loos recovery in the Marline firmware is enabled.
+
+---
+
+##### Bed Leveling
+		Vor bed leveling, lower the bed so low as posible, to prevent nozzle hitting the bed.
+		Reset the bilinear leveling grid by using the M1000 G-Code (see upper).
+		
+		Do a Printer reset over the LCD.
+		After reset home the printer.
+		Then go on the LCD to 
+		Tools->More->Level->Advance Setings
+		Select point 1 and the nossle moves to the bed point in the left down corner.
+		Now level the bed with a cheat of paper or everithing else that have a height of 0.1 mm 
+        or the given height of the value [EXT_LEVEL_HIGH] set in Configuration.h .
+		
+		Repeat this with point 5, 25, 21 an go around the bed.
+		do this 2 ore more times, vor a perfect  bed leveling.
+
+		Wenn you think you habe the pervect leveling, you cann begin to level with the Auto Level 
+        Device or do a Manuel leveling.
+
+		For Manuel leveling move the nozzel with the LCD menue to the grid point you will level. 
+		Increase or decrease the height betwen the bed and the nozzel with the LCD.
+		To see the result move the nozzel awai from this point and move back.
 
 
 

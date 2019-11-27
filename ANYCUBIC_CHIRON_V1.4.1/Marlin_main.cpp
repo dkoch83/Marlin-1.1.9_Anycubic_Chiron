@@ -3087,7 +3087,6 @@ static void do_homing_move(const AxisEnum axis, const float distance, const floa
  */
 
 static void homeaxis(const AxisEnum axis) {
-
   #if IS_SCARA
     // Only Z homing (with probe) is permitted
     if (axis != Z_AXIS) { BUZZ(100, 880); return; }
@@ -10915,13 +10914,25 @@ inline void gcode_M502() {
       const float value = parser.value_linear_units();
 
       if (WITHIN(value, Z_PROBE_OFFSET_RANGE_MIN, Z_PROBE_OFFSET_RANGE_MAX)) {
-        float height_difference =(value - zprobe_zoffset);
+        float height_difference = (value - zprobe_zoffset);
         
-        for (uint8_t x = 0; x < GRID_MAX_POINTS_X; x++)
-          for (uint8_t y = 0; y < GRID_MAX_POINTS_Y; y++)
+        for (uint8_t x = 0; x < GRID_MAX_POINTS_X; x++) {
+          for (uint8_t y = 0; y < GRID_MAX_POINTS_Y; y++) {
             z_values[x][y] += height_difference;
+		  }
+		}
         zprobe_zoffset = value;
+		SAVE_zprobe_zoffset = zprobe_zoffset;
+		
+		// Anycubic Chiron 1.4.1 add
+		destination[Z_AXIS] = current_position[Z_AXIS];
+		current_position[Z_AXIS] -= height_difference;
+		sync_plan_position();
+		
+		set_bed_leveling_enabled(true);
         refresh_bed_level();
+		prepare_move_to_destination();		
+		report_current_position();
       }
       else {
         SERIAL_ERROR_START();
@@ -12170,6 +12181,29 @@ inline void gcode_M999() {
   flush_and_request_resend();
 }
 
+inline void gcode_M1000() {
+      #if ENABLED(AUTO_BED_LEVELING_BILINEAR)
+		  #if ENABLED(CHIRON_LCD)
+			reset_bed_level();
+
+			// Initialize a grid with the given dimensions
+			bilinear_grid_spacing[X_AXIS] = (RIGHT_PROBE_BED_POSITION - LEFT_PROBE_BED_POSITION) / (GRID_MAX_POINTS_X - 1);
+			bilinear_grid_spacing[Y_AXIS] = (BACK_PROBE_BED_POSITION - FRONT_PROBE_BED_POSITION) / (GRID_MAX_POINTS_Y - 1);
+			bilinear_start[X_AXIS] = LEFT_PROBE_BED_POSITION;
+			bilinear_start[Y_AXIS] = FRONT_PROBE_BED_POSITION;
+
+			zprobe_zoffset     = Z_PROBE_OFFSET_FROM_EXTRUDER;
+
+			for (uint8_t x = 0; x < GRID_MAX_POINTS_X; x++) {
+				for (uint8_t y = 0; y < GRID_MAX_POINTS_Y; y++) {
+					z_values[x][y] = (float)-2.0;
+				}
+			}			
+		  #endif
+	  #endif	
+}
+
+
 #if DO_SWITCH_EXTRUDER
   #if EXTRUDERS > 3
     #define REQ_ANGLES 4
@@ -13177,6 +13211,8 @@ void process_parsed_command() {
       #endif
 
       case 999: gcode_M999(); break;                              // M999: Restart after being Stopped
+
+	  case 1000: gcode_M1000(); break;
 
       default: parser.unknown_command_error();
     }

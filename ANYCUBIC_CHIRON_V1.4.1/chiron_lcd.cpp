@@ -73,15 +73,13 @@
 // There is no evidence a line will ever be this long, but better safe than sorry
 #define MAX_TFT_BUFFER 32
 
-#if PIN_EXISTS(SD_DETECT)
-	uint8_t lcd_sd_status;
-#endif
-
 #if HAS_RESUME_CONTINUE
 	extern volatile bool wait_for_user;
 #endif
 
 extern uint8_t commands_in_queue;
+extern void wait_emty_command_quene();
+extern bool axis_relative_modes[XYZE];
 
 //void lcd_reset_status();
 
@@ -94,7 +92,6 @@ void SDCARD_UPDATA();
 void restore_z_values();
 
 void pauseCMDsend();
-void setupSDCARD();
 void TFT_Commond_Scan();
 void setupMyZoffset();
 void Endstopsbeep();
@@ -104,26 +101,23 @@ void get_command_from_TFT(const char* command);
 bool TFTcode_seen(char code);
 float TFTcode_value();
 
-void Newok_to_send();
 void setuplevelTest();
 void USBOnLineTest();
 void FilamentScan();
-void SetupFilament();
+
 void setup_ChironPowerLossPin();
-void SaveWay2Leveling();
-void ReadWay2Leveling();	
 
 #if PIN_EXISTS(SD_DETECT)
-	extern uint8_t lcd_sd_status;
+	uint8_t lcd_sd_status;
 #endif
 
 #if HAS_BED_PROBE
 	float SAVE_zprobe_zoffset;
 #endif
 
-bool FilamentRunOut = false;
-bool pauseCMDsendflag = false;
-char PointTestFlag = 0;
+bool FilamentRunOut		= false;
+bool pauseCMDsendflag	= false;
+char PointTestFlag		= 0;
 uint16_t filenumber;
 
 bool ReadMyfileNrFlag = true;
@@ -173,20 +167,35 @@ void write_to_lcd_i(int value) {
   LCD_SERIAL.Print::print(value, DEC);
 }
 
+void lcd_setalertstatusPGM(const char* message) {
+	/*
+	char message_buffer[MAX_CURLY_COMMAND];
+	sprintf_P(message_buffer, PSTR("{E:%s}"), message);
+	write_to_lcd(message_buffer);
+	*/
+}
+
 void lcd_init() {
 	inbound_count = 0;
 	LCD_SERIAL.begin(115200);
 
-	#ifdef AUTO_BED_LEVELING_BILINEAR
+	#if ENABLED(AUTO_BED_LEVELING_BILINEAR)
 		setupMyZoffset();
 		delay(10);
 	#endif
 
+	#if ENABLED(SDSUPPORT) && PIN_EXISTS(SD_DETECT)
+		SET_INPUT(SD_DETECT_PIN);
+		WRITE(SD_DETECT_PIN, HIGH);
+		lcd_sd_status = 2;
+		_delay_ms(300);
+		card.initsd();
+	#endif
+
+	setup_ChironPowerLossPin();
+
 	_delay_ms(20);
 	PowerOnMusic();
-	setup_ChironPowerLossPin();
-	setupSDCARD();
-	SetupFilament();
 	
 	sdcardstartprintingflag 	= 0;
 	last_printing_status 		= false;
@@ -206,26 +215,30 @@ void lcd_init() {
 	write_to_lcd_P(PSTR("J12\r\n")); //  READY	
 }
 
+  
+
 void lcd_update() {
-	static char inbound_buffer[MAX_TFT_BUFFER];  
+	static char inbound_buffer[MAX_TFT_BUFFER];
 	static unsigned int counter=0;
 	static unsigned int Scancount=0;
+	
+//	if (TFTcomment_mode == true) return;
 	
 	USBOnLineTest();
 	pauseCMDsend();
 	FilamentScan();
   
 	counter++;
-	if(counter%1000==0) {
+	if(counter%500==0) {
 		counter=0;  
-	SDCARD_UPDATA();
+		SDCARD_UPDATA();
 	} 
 	
 	// Test Print Finish
 	if (sdcardstartprintingflag == 1 && card.isFileOpen() == false ) {
 		sdcardstartprintingflag = 0;
 		last_printing_status = false;
-		
+		MyFileNrCnt		     = 0;		
 		write_to_lcd_P(PSTR("J14\r\n")); //PRINT DONE
 	}
 	
@@ -239,25 +252,24 @@ void lcd_update() {
 
 	while (LCD_SERIAL.available()) {
 		const byte b = (byte)LCD_SERIAL.read();
-		if( b == '\n' || b == '\r' || (b == ':' && TFTcomment_mode == false) || inbound_count >= (sizeof(inbound_buffer) - 1) ) {	
 			
-			if(!inbound_count) { 				//if empty line
+		if( b == '\n' || b == '\r' || (b == ':' && TFTcomment_mode == false) || inbound_count >= (sizeof(inbound_buffer) - 1) ) {
+
+			if(inbound_count == 0) {			//if empty line
 				TFTcomment_mode = false; 		//for new command
 				return;
-			}
-			inbound_buffer[inbound_count] = 0; 	//terminate string
+			} 
 			
-			// Debug
-			//SERIAL_ECHOLN(inbound_buffer);
+			inbound_buffer[inbound_count] = 0; 	//terminate string
 			
 			if(!TFTcomment_mode){
 				get_command_from_TFT(inbound_buffer);
-				LCD_SERIAL.flush();
 			}
 			inbound_count = 0; 					// clear buffer
+			
 		} else {
 			if(b == ';') TFTcomment_mode = true;
-			if(!TFTcomment_mode) {
+			if(TFTcomment_mode == false) {
 				inbound_buffer[inbound_count++] = b;
 			}
 		}   
@@ -271,39 +283,39 @@ void lcd_update() {
 */
 
 void pauseCMDsend() {
-	static char temp = 0;
-	char cmd[32];
-	if( commands_in_queue < BUFSIZE && pauseCMDsendflag == true) { 
-		temp++;
-		if(temp == 1) {
-			#if ENABLED(PARK_HEAD_ON_PAUSE)
-			enqueue_and_echo_commands_P(PSTR("M125"));
-			// when pause sd printing,send "ok" to tft as read buffer carry out
-			planner.synchronize();
-			write_to_lcd_P(PSTR("J18\r\n")); // pausing done
-			pauseCMDsendflag = false;
-			temp = 0;
-			#else
-			enqueue_and_echo_commands_P(PSTR("G91"));
-			#endif
+		static char temp = 0;
+		char cmd[32];
+		if( commands_in_queue < BUFSIZE && pauseCMDsendflag == true) {
+				temp++;
+				if(temp == 1) {
+					#if ENABLED(PARK_HEAD_ON_PAUSE)
+						enqueue_and_echo_commands_P(PSTR("M125"));
+						// when pause sd printing,send "ok" to tft as read buffer carry out
+						planner.synchronize();
+						write_to_lcd_P(PSTR("J18\r\n")); // pausing done
+						pauseCMDsendflag = false;
+						temp = 0;
+					#else
+						enqueue_and_echo_commands_P(PSTR("G91"));
+					#endif
+				}
+				if(temp == 2) {
+					if (axis_relative_modes[E_CART] == true) {
+						sprintf_P(cmd, PSTR("G1 E%s F3600.00"), ftostr52sign(current_position[E_CART] - 0.5));
+						enqueue_and_echo_command_now(cmd);
+					} else {
+						enqueue_and_echo_commands_P(PSTR("G1 E-0.5 F3600.00"));
+					}
+				}
+				if(temp == 3) {
+					enqueue_and_echo_commands_P(PSTR("G1 Z+10"));
+					pauseCMDsendflag = false;
+					temp = 0;
+					// when pause sd printing,send "ok" to tft as read buffer carry out
+					planner.synchronize();
+					write_to_lcd_P(PSTR("J18\r\n")); // pausing done
+				}
 		}
-		if(temp == 2) {
-			if (axis_relative_modes[E_CART] == false) {
-				sprintf_P(cmd, PSTR("G1 E%fF2400.00000"), (current_position[E_CART]-5.0));
-				enqueue_and_echo_command_now(cmd);
-				} else {
-				enqueue_and_echo_commands_P(PSTR("G1 E-5"));
-			}
-		}
-		if(temp == 3) {
-			enqueue_and_echo_commands_P(PSTR("G1 Z+10"));
-			pauseCMDsendflag = false;
-			temp = 0;
-			// when pause sd printing,send "ok" to tft as read buffer carry out
-			planner.synchronize();
-			write_to_lcd_P(PSTR("J18\r\n")); // pausing done
-		}
-	}
 }
 
 void FilamentScan() {
@@ -314,29 +326,25 @@ void FilamentScan() {
 		count = 0;
 	}
 
-	if(last_printing_status == false && READ(FIL_RUNOUT_PIN) == FIL_RUNOUT_INVERTING) {
+	if (last_printing_status == false && runout.filament_ran_out == true) {
+	//if(last_printing_status == false && READ(FIL_RUNOUT_PIN) == FIL_RUNOUT_INVERTING) {
 		write_to_lcd_P(PSTR("J15\r\n")); 	// J15 FILAMENT LACK
 	}	
 	
-	if(wait_for_user == true && card.sdprinting == false && READ(FIL_RUNOUT_PIN) == FIL_RUNOUT_INVERTING && count == 0) {
+	if(wait_for_user == true && card.sdprinting == false && runout.filament_ran_out == true && count == 0) {
+	//if(wait_for_user == true && card.sdprinting == false && READ(FIL_RUNOUT_PIN) == FIL_RUNOUT_INVERTING && count == 0) {
 		FilamentLack(); //music
 		FilamentRunOut = true;
 		write_to_lcd_P(PSTR("J23\r\n")); 	// J23 FILAMENT LACK with the prompt box don't disappear
 		write_to_lcd_P(PSTR("J18\r\n"));    // pausing done
 		count++;
 	} else 	
-	if(wait_for_user == true 
-		&& card.sdprinting == false 
-		&& READ(FIL_RUNOUT_PIN) == !FIL_RUNOUT_INVERTING
-		&& thermalManager.is_heater_idle(0) == false
-		&& FilamentRunOut == false
-		&& count == 1
-	) {
+	
+	if(wait_for_user == true && card.sdprinting == false && runout.filament_ran_out == false && thermalManager.is_heater_idle(0) == false && FilamentRunOut == false && count == 1) {
 		write_to_lcd_P(PSTR("J06\r\n"));  	// Message hotend heating
 		wait_for_user = false;
 		count++;
-	} else 
-	if (wait_for_heatup == false && count == 3) {
+	} else 	if (wait_for_heatup == false && count == 3) {
 		write_to_lcd_P(PSTR("J07\r\n")); 	//hotend heating done
 	}			
 } 
@@ -349,22 +357,22 @@ void lcd_reset_status() {
 }
 */
 
-void lcd_setalertstatusPGM(const char* message) {
-	/*
-	char message_buffer[MAX_CURLY_COMMAND];
-	sprintf_P(message_buffer, PSTR("{E:%s}"), message);
-	write_to_lcd(message_buffer);
-	*/
-}
-
 void SDCARD_UPDATA() {
 	uint8_t sd_status = IS_SD_INSERTED();
 	if (sd_status != lcd_sd_status) {
 		if (sd_status) {
 			card.initsd();
+			_delay_ms(300);			
+			card.initsd();
+			_delay_ms(300);
+			card.initsd();			
 			MyFileNrCnt=0;
+			//sdcardstartprintingflag = 0;
+			//last_printing_status = false;
 			write_to_lcd_P(PSTR("J00\r\n"));
 		} else {
+			card.release();
+			_delay_ms(300);
 			card.release();
 			write_to_lcd_P(PSTR("J01\r\n"));
 		}
@@ -376,12 +384,6 @@ void setup_ChironPowerLossPin() {
     pinMode(POWER_LOSS_PIN, INPUT);
     pinMode(POWER_LOSS_CON_PIN, OUTPUT);
 	WRITE(POWER_LOSS_CON_PIN, HIGH);  // ON
-}
-
-void SetupFilament() {
-    pinMode(FIL_RUNOUT_PIN,INPUT);
-    WRITE(FIL_RUNOUT_PIN,HIGH);
-     _delay_ms(50);
 }
 
 void USBOnLineTest() {
@@ -412,25 +414,6 @@ void USBOnLineTest() {
 		}
     }      
 }
-
-#define Z_TEST 2
-void setuplevelTest() {
-    pinMode(Z_TEST,INPUT);
-    WRITE(Z_TEST, HIGH);
-    pinMode(BEEPER_PIN,OUTPUT);
-    WRITE(BEEPER_PIN, LOW);
-}
-
-void Newok_to_send() {
-  previous_move_ms = millis();
-}
-
-/*
-void NEWFlushSerialRequestResend() {
-  NewSerial.flush();
-  Newok_to_send();
-}
-*/
 
 void TFT_Commond_Scan() {
 	lcd_update();
@@ -482,8 +465,7 @@ void get_command_from_TFT(const char* TFTcmdbuffer) {
         break;
             
         case 4: // A4 GET FAN SPEED 
-			temp = ((fanSpeeds[0]*100)/Max_ModelCooling+1);
-			temp = constrain(temp,0,100);
+			temp = constrain(((fanSpeeds[0]*100)/(Max_ModelCooling))+1,0,100);
 			write_to_lcd_P(PSTR("A4V "));
 			write_to_lcd_i(temp);
 			write_to_lcd_P(PSTR("\r\n"));
@@ -538,7 +520,8 @@ void get_command_from_TFT(const char* TFTcmdbuffer) {
 				if ( MyFileNrCnt == 0 ) {
 					card.chdir(PSTR(""));
 					MyFileNrCnt = card.get_num_Files();
-				} 
+				}
+
 				if ( MyFileNrCnt > 0 ) {
 					if(TFTcode_seen(TFTcmdbuffer, 'S')) filenumber = TFTcode_value();
 					write_to_lcd_P(PSTR("FN \r\n"));
@@ -547,6 +530,7 @@ void get_command_from_TFT(const char* TFTcmdbuffer) {
 					filecnt = 0;
 					while ( (fileoutputcnt < (filenumber + 4)) && (filecnt <  (MyFileNrCnt)) ) {
 						card.getfilename((filecnt),NULL);
+						//write_to_lcd_P(PSTR("/"));
 						if( (strstr(card.filename,".g") !=NULL ) || (strstr(card.filename,".G") !=NULL) ) {
 							fileoutputcnt++;
 							if (fileoutputcnt > filenumber) {
@@ -583,11 +567,11 @@ void get_command_from_TFT(const char* TFTcmdbuffer) {
 				enqueue_and_echo_commands_P(PSTR("M24"));
 			#else
 				enqueue_and_echo_commands_P(PSTR("G91"));
-				if (axis_relative_modes[E_CART] == false) {
-					sprintf_P(cmd, PSTR("G1 E%fF2400.00000"), (current_position[E_CART]+5.0));
+				if (axis_relative_modes[E_CART] == true) {
+					sprintf_P(cmd, PSTR("G1 E%s F3600.00"), ftostr52sign(current_position[E_CART] + 0.5));
 					enqueue_and_echo_command_now(cmd);
-					} else {
-					enqueue_and_echo_commands_P(PSTR("G1 E5\n"));
+				} else {
+					enqueue_and_echo_commands_P(PSTR("G1 E0.50 F3600.00"));
 				}
 				enqueue_and_echo_commands_P(PSTR("G1 Z-10"));
 				enqueue_and_echo_commands_P(PSTR("G90"));
@@ -629,12 +613,10 @@ void get_command_from_TFT(const char* TFTcmdbuffer) {
 			if( (!planner.movesplanned())&&(!last_printing_status) ) {
 				starpos = (strchr(TFTstrchr_pointer + 4,'*'));
 				if( starpos!=NULL) *(starpos-1) = '\0';
-				//write_to_lcd_P(PSTR("/"));
 				card.openFile(TFTstrchr_pointer + 4, true, false);
 				if ( card.isFileOpen() ) {
 					write_to_lcd_P(PSTR("J20\r\n")); 	// OPEN SUCCESS
 					sdcardstartprintingflag = 1;
-
 					write_to_lcd(TFTstrchr_pointer + 4);
 					write_to_lcd_P(PSTR("\r\n"));
 				} else {
@@ -827,7 +809,7 @@ void get_command_from_TFT(const char* TFTcmdbuffer) {
         break;
 
         case 24: // A24 prheat abs
-			if((!planner.movesplanned())&&(!last_printing_status)) {
+			if( (!planner.movesplanned()) && (!last_printing_status) ) {
 				thermalManager.setTargetBed(PREHEAT_2_TEMP_BED);
 				thermalManager.setTargetHotend(PREHEAT_2_TEMP_HOTEND, 0);
 				write_to_lcd_P(PSTR("OK\r\n"));
@@ -835,7 +817,7 @@ void get_command_from_TFT(const char* TFTcmdbuffer) {
         break;
         
 		case 25: //A25 cool down
-			if((!planner.movesplanned())&&(!last_printing_status)) {
+			if( (!planner.movesplanned()) && (!last_printing_status) ) {
 				thermalManager.setTargetHotend(0,0);
 				thermalManager.setTargetBed(0);
 				write_to_lcd_P(PSTR("J12\r\n"));
@@ -844,6 +826,10 @@ void get_command_from_TFT(const char* TFTcmdbuffer) {
 
 		case 26: // A26 refresh
 			card.initsd();
+			_delay_ms(300);
+			card.initsd();
+			_delay_ms(300);
+			card.initsd();			
 			MyFileNrCnt = 0;
 			if(!IS_SD_INSERTED()){
 				write_to_lcd_P(PSTR("J02\r\n"));
@@ -890,21 +876,47 @@ void get_command_from_TFT(const char* TFTcmdbuffer) {
 		case 29: // A29 bed grid read
 		{
 			#ifdef AUTO_BED_LEVELING_BILINEAR
-			if(TFTcode_seen(TFTcmdbuffer, 'X')) x = TFTcode_value();
-			if(TFTcode_seen(TFTcmdbuffer, 'Y')) y = TFTcode_value();
-			float Zvalue = z_values[x][y];
-			Zvalue = Zvalue * 100;
+				if(TFTcode_seen(TFTcmdbuffer, 'X')) x = TFTcode_value();
+				if(TFTcode_seen(TFTcmdbuffer, 'Y')) y = TFTcode_value();
+				float Zvalue = z_values[x][y];
+				Zvalue = Zvalue * 100;
+				
+				refresh_bed_level();
+				set_bed_leveling_enabled(true);
 
-			write_to_lcd_P(PSTR("A29V "));
-			write_to_lcd_f(Zvalue);
-			write_to_lcd_P(PSTR("\r\n")); // Enter
+				if(!card.sdprinting && sdcardstartprintingflag == 0) {
+					if (!all_axes_known()) {
+						enqueue_and_echo_commands_P(PSTR("G28"));
+					} else {
+						destination[Z_AXIS] = (float)(5.0);
+						prepare_move_to_destination();
+
+						feedrate_mm_s = MMM_TO_MMS(3600.0f);
+					
+						destination[X_AXIS] = _GET_MESH_X(x);
+						destination[Y_AXIS] = _GET_MESH_Y(y);					
+					
+						//destination[X_AXIS] = (float)(LEFT_PROBE_BED_POSITION  + ( x * ((RIGHT_PROBE_BED_POSITION - LEFT_PROBE_BED_POSITION) / (GRID_MAX_POINTS_X-1))) );
+						//destination[Y_AXIS] = (float)(FRONT_PROBE_BED_POSITION + ( y * ((BACK_PROBE_BED_POSITION - FRONT_PROBE_BED_POSITION) / (GRID_MAX_POINTS_Y-1))) );
+						
+						prepare_move_to_destination();
+
+						destination[Z_AXIS] = (float)(EXT_LEVEL_HIGH);
+						prepare_move_to_destination();
+
+						report_current_position();
+					}
+				}
+				write_to_lcd_P(PSTR("A29V "));
+				write_to_lcd_f(Zvalue);
+				write_to_lcd_P(PSTR("\r\n")); // Enter
 			#endif
 		}
 		break;
 		
 		case 30: // A30 auto leveling
 			#ifdef AUTO_BED_LEVELING_BILINEAR
-			if((planner.movesplanned())||(card.sdprinting)) {
+			if( (planner.movesplanned()) || (card.sdprinting) ) {
 				write_to_lcd_P(PSTR("J24\r\n"));	// forbid auto leveling
 				} else {
 				write_to_lcd_P(PSTR("J26\r\n"));	// start auto leveling
@@ -918,7 +930,6 @@ void get_command_from_TFT(const char* TFTcmdbuffer) {
 		break;
 		
 		case 31: // A31 zoffset set get or save
-			//if(Manual_Leveling==0xaa)break;
 			#ifdef AUTO_BED_LEVELING_BILINEAR
 			if(TFTcode_seen(TFTcmdbuffer, 'S')) {
 				float value = constrain(TFTcode_value(),-1.0,1.0);
@@ -926,9 +937,11 @@ void get_command_from_TFT(const char* TFTcmdbuffer) {
 				for (x = 0; x < GRID_MAX_POINTS_X; x++) {
 					for (y = 0; y < GRID_MAX_POINTS_Y; y++) z_values[x][y] += value;
 				}
+				set_bed_leveling_enabled(true);
+				refresh_bed_level();
+
 				write_to_lcd_P(PSTR("A31V "));
 				write_to_lcd_f(zprobe_zoffset);
-				refresh_bed_level();
 			}
 			if(TFTcode_seen(TFTcmdbuffer, 'G')) {
 				SAVE_zprobe_zoffset = zprobe_zoffset;
@@ -982,11 +995,13 @@ void get_command_from_TFT(const char* TFTcmdbuffer) {
        
 		case 34: // A34 bed grid write
 			#ifdef AUTO_BED_LEVELING_BILINEAR
-			if(TFTcode_seen(TFTcmdbuffer, 'X')) x=constrain(TFTcode_value(),0,GRID_MAX_POINTS_X);
-			if(TFTcode_seen(TFTcmdbuffer, 'Y')) y=constrain(TFTcode_value(),0,GRID_MAX_POINTS_Y);
+			if(TFTcode_seen(TFTcmdbuffer, 'X')) x = constrain(TFTcode_value(),0,GRID_MAX_POINTS_X);
+			if(TFTcode_seen(TFTcmdbuffer, 'Y')) y = constrain(TFTcode_value(),0,GRID_MAX_POINTS_Y);
 			if(TFTcode_seen(TFTcmdbuffer, 'V')) {
-				//float i = constrain(TFTcode_value()/100,-10,10);
-				z_values[x][y] = (float)constrain(TFTcode_value()/100,-10,10);
+				//z_values[x][y] = (float)constrain(TFTcode_value()/100,-10,10);
+				float new_z_value = (float)constrain(TFTcode_value()/100,-10,10);
+				z_values[x][y] = new_z_value;
+				set_bed_leveling_enabled(true);
 				refresh_bed_level();
 			}
 			if(TFTcode_seen(TFTcmdbuffer, 'S')) {
@@ -1058,32 +1073,23 @@ void Endstopsbeep() {
 	}  
 }
 
-void setupSDCARD() {
-	#if ENABLED(SDSUPPORT) && PIN_EXISTS(SD_DETECT)
-		SET_INPUT(SD_DETECT_PIN);
-		WRITE(SD_DETECT_PIN, HIGH);
-		lcd_sd_status = 2;
-		_delay_ms(300);
-		card.initsd();
-	#endif
-}
-
-
 void setupMyZoffset() {
-	#ifdef AUTO_BED_LEVELING_BILINEAR
-	SERIAL_ECHOPAIR("MEANL_L:", 0x55);
-	SAVE_zprobe_zoffset = zprobe_zoffset;
+	#if ENABLED(AUTO_BED_LEVELING_BILINEAR)
+		SERIAL_ECHOPAIR("MEANL_L:", 0x55);
+		SAVE_zprobe_zoffset = zprobe_zoffset;
 	#else
 	SERIAL_ECHOPAIR("MEANL_L:", 0xaa);
-	zprobe_zoffset     = Z_PROBE_OFFSET_FROM_EXTRUDER;
+		zprobe_zoffset     = Z_PROBE_OFFSET_FROM_EXTRUDER;
 	#endif
+/*
     for (uint8_t x = 0; x < GRID_MAX_POINTS_X; x++) {
 	    for (uint8_t y = 0; y < GRID_MAX_POINTS_Y; y++) {
-			if (z_values[x][y] == (float)0.0) {
+			if (z_values[x][y] == (float)0.0 || z_values[x][y] == NAN) {
 				z_values[x][y] = (float)-3.5;
 			}
 		}
-    };	
+    }	
+*/	
 }
 
 #endif // CHIRON_LCD
