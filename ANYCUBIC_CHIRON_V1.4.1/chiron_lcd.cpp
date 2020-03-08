@@ -326,36 +326,28 @@ void FilamentScan() {
 		count = 0;
 	}
 
-	if (last_printing_status == false && runout.filament_ran_out == true) {
-	//if(last_printing_status == false && READ(FIL_RUNOUT_PIN) == FIL_RUNOUT_INVERTING) {
+	if (last_printing_status == false && (READ(FIL_RUNOUT_PIN) == FIL_RUNOUT_INVERTING) == true) {
 		write_to_lcd_P(PSTR("J15\r\n")); 	// J15 FILAMENT LACK
 	}	
 	
-	if(wait_for_user == true && card.sdprinting == false && runout.filament_ran_out == true && count == 0) {
-	//if(wait_for_user == true && card.sdprinting == false && READ(FIL_RUNOUT_PIN) == FIL_RUNOUT_INVERTING && count == 0) {
+	if(wait_for_user == true && card.sdprinting == false && (READ(FIL_RUNOUT_PIN) == FIL_RUNOUT_INVERTING) == true && count == 0) {
 		FilamentLack(); //music
 		FilamentRunOut = true;
 		write_to_lcd_P(PSTR("J23\r\n")); 	// J23 FILAMENT LACK with the prompt box don't disappear
 		write_to_lcd_P(PSTR("J18\r\n"));    // pausing done
-		count++;
-	} else 	
-	
-	if(wait_for_user == true && card.sdprinting == false && runout.filament_ran_out == false && thermalManager.is_heater_idle(0) == false && FilamentRunOut == false && count == 1) {
-		write_to_lcd_P(PSTR("J06\r\n"));  	// Message hotend heating
-		wait_for_user = false;
-		count++;
-	} else 	if (wait_for_heatup == false && count == 3) {
-		write_to_lcd_P(PSTR("J07\r\n")); 	//hotend heating done
-	}			
+		count=1;
+	} else {	
+		if(wait_for_user == true && card.sdprinting == false && (READ(FIL_RUNOUT_PIN) == FIL_RUNOUT_INVERTING) == false && thermalManager.is_heater_idle(0) == false && FilamentRunOut == false && count == 1) {
+			write_to_lcd_P(PSTR("J06\r\n"));  	// Message hotend heating
+			wait_for_user = false;
+			count=2;
+		} else 	if (thermalManager.is_heater_idle(0) == false && count == 2) {
+			wait_for_user = false;
+			write_to_lcd_P(PSTR("J07\r\n")); 	//hotend heating done
+		}
+	}
 } 
 
-/*
-void lcd_reset_status() {
-    if (wait_for_heatup) {
-		write_to_lcd_P(PSTR("J09\r\n")); //hotbed heating
-    }
-}
-*/
 
 void SDCARD_UPDATA() {
 	uint8_t sd_status = IS_SD_INSERTED();
@@ -367,8 +359,6 @@ void SDCARD_UPDATA() {
 			_delay_ms(300);
 			card.initsd();			
 			MyFileNrCnt=0;
-			//sdcardstartprintingflag = 0;
-			//last_printing_status = false;
 			write_to_lcd_P(PSTR("J00\r\n"));
 		} else {
 			card.release();
@@ -581,12 +571,15 @@ void get_command_from_TFT(const char* TFTcmdbuffer) {
 				card.startFileprint();
 			#endif
 			pauseCMDsendflag = false;
-		} else if (card.sdprinting == false && wait_for_user == true && READ(FIL_RUNOUT_PIN) == !FIL_RUNOUT_INVERTING) {
+		} else if (card.sdprinting == false && wait_for_user == true && FilamentRunOut == true) {
 			FilamentRunOut = false;
 			wait_for_user = false;
-		} else {
+		} //else {
+		
+		if ( (READ(FIL_RUNOUT_PIN) == FIL_RUNOUT_INVERTING) == true) {
 			FilamentLack(); //music
 			FilamentRunOut = true;
+			wait_for_user  = true;
 			write_to_lcd_P(PSTR("J23\r\n")); 	// J23 FILAMENT LACK with the prompt box don't disappear
 			write_to_lcd_P(PSTR("J18\r\n"));    // pausing done
 			break;
@@ -896,9 +889,6 @@ void get_command_from_TFT(const char* TFTcmdbuffer) {
 						destination[X_AXIS] = _GET_MESH_X(x);
 						destination[Y_AXIS] = _GET_MESH_Y(y);					
 					
-						//destination[X_AXIS] = (float)(LEFT_PROBE_BED_POSITION  + ( x * ((RIGHT_PROBE_BED_POSITION - LEFT_PROBE_BED_POSITION) / (GRID_MAX_POINTS_X-1))) );
-						//destination[Y_AXIS] = (float)(FRONT_PROBE_BED_POSITION + ( y * ((BACK_PROBE_BED_POSITION - FRONT_PROBE_BED_POSITION) / (GRID_MAX_POINTS_Y-1))) );
-						
 						prepare_move_to_destination();
 
 						destination[Z_AXIS] = (float)(EXT_LEVEL_HIGH);
@@ -1081,15 +1071,6 @@ void setupMyZoffset() {
 	SERIAL_ECHOPAIR("MEANL_L:", 0xaa);
 		zprobe_zoffset     = Z_PROBE_OFFSET_FROM_EXTRUDER;
 	#endif
-/*
-    for (uint8_t x = 0; x < GRID_MAX_POINTS_X; x++) {
-	    for (uint8_t y = 0; y < GRID_MAX_POINTS_Y; y++) {
-			if (z_values[x][y] == (float)0.0 || z_values[x][y] == NAN) {
-				z_values[x][y] = (float)-3.5;
-			}
-		}
-    }	
-*/	
 }
 
 #endif // CHIRON_LCD
