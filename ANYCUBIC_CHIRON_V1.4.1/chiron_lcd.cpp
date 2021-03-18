@@ -904,11 +904,11 @@ void get_command_from_TFT(const char* TFTcmdbuffer) {
 		}
 		break;
 		
-		case 30: // A30 auto leveling
+		case 30: // A30 auto leveling (Old Display)
 			#ifdef AUTO_BED_LEVELING_BILINEAR
 			if( (planner.movesplanned()) || (card.sdprinting) ) {
 				write_to_lcd_P(PSTR("J24\r\n"));	// forbid auto leveling
-				} else {
+			} else {
 				write_to_lcd_P(PSTR("J26\r\n"));	// start auto leveling
 			}
 			if(TFTcode_seen(TFTcmdbuffer, 'S') ) {
@@ -1005,6 +1005,21 @@ void get_command_from_TFT(const char* TFTcmdbuffer) {
 				set_bed_leveling_enabled(true);
 				refresh_bed_level();
 			}
+			#endif
+		break;
+
+		case 36: // A36 auto leveling (New Display)
+			#ifdef AUTO_BED_LEVELING_BILINEAR
+			if( (planner.movesplanned()) || (card.sdprinting) ) {
+				write_to_lcd_P(PSTR("J24\r\n"));	// forbid auto leveling
+			} else {
+				write_to_lcd_P(PSTR("J26\r\n"));	// start auto leveling
+			}
+			if(TFTcode_seen(TFTcmdbuffer, 'S') ) {
+				enqueue_and_echo_commands_P(PSTR("G28\nG29"));
+			}
+			#else
+			write_to_lcd_P(PSTR("J24\r\n"));	// forbid auto leveling
 			#endif
 		break;
 		
