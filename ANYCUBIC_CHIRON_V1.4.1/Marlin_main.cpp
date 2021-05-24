@@ -7466,8 +7466,13 @@ inline void gcode_M17() {
     #if ENABLED(PARK_HEAD_ON_PAUSE)
       enqueue_and_echo_commands_P(PSTR("M125")); // Must be enqueued with pauseSDPrint set to be last in the buffer
     #endif
+    
+    #if ENABLED(CHIRON_LCD)
+      // activate "continue" on LCD
+      write_to_lcd_P(PSTR("J05\r\n")); // J05 Pausing
+    #endif    
   }
-
+  
   /**
    * M26: Set SD Card file index
    */
@@ -8454,7 +8459,7 @@ inline void gcode_M109() {
         #endif
     #endif
     
-    #ifdef ENABLED(CHIRON_LCD)
+    #if ENABLED(CHIRON_LCD)
         write_to_lcd_P(PSTR("J06\r\n")); //heating
     #endif    
   }
@@ -8569,13 +8574,13 @@ inline void gcode_M109() {
   }
   
   
-  #ifdef ENABLED(CHIRON_LCD)
+  #if ENABLED(CHIRON_LCD)
 	write_to_lcd_P(PSTR("J07\r\n")); 		//hotend heating done
 	if(card.sdprinting) {
 		write_to_lcd_P(PSTR("J04\r\n")); 	//printing from sd card
 	}
 	else if(USBConnectFlag) {
-		write_to_lcd_P(PSTR("J03\r\n")); 	//usb connectting
+		write_to_lcd_P(PSTR("J03\r\n")); 	//usb connecting
 	}		
   #endif     
   
